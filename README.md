@@ -1,4 +1,4 @@
-# dbus-shelly-1pm-pvinverter
+# dbus-shelly-plug-inverter
 Integrate Shelly Plug into Victron Energies Venus OS
 
 ## Purpose
@@ -12,6 +12,7 @@ This project is my first on GitHub and with the Victron Venus OS, so I took some
 - https://github.com/fabian-lauer/dbus-shelly-3em-smartmeter
 - https://shelly-api-docs.shelly.cloud/gen1/#shelly1-shelly1pm
 - https://github.com/victronenergy/venus/wiki/dbus#pv-inverters
+- 
 
 ## How it works
 ### My setup
