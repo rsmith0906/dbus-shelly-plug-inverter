@@ -21,7 +21,7 @@ from vedbus import VeDbusService
 
 
 class DbusShelly1pmService:
-  def __init__(self, servicename, paths, productname='Shelly 1PM', connection='Shelly 1PM HTTP JSON service'):
+  def __init__(self, servicename, paths, productname='Shelly Plug', connection='Shelly Plug HTTP JSON service'):
     config = self._getConfig()
     deviceinstance = int(config['DEFAULT']['Deviceinstance'])
     customname = config['DEFAULT']['CustomName']
@@ -50,7 +50,7 @@ class DbusShelly1pmService:
     self._dbusservice.add_path('/Position', int(config['DEFAULT']['Position']))
     self._dbusservice.add_path('/Serial', self._getShellySerial())
     self._dbusservice.add_path('/UpdateIndex', 0)
-    self._dbusservice.add_path('/StatusCode', 0)  # Dummy path so VRM detects us as a PV-inverter.
+    self._dbusservice.add_path('/State', 0)  # Dummy path so VRM detects us as a inverter.
 
     # add path values to dbus
     for path, settings in self._paths.items():
@@ -119,7 +119,7 @@ class DbusShelly1pmService:
 
     # check for response
     if not meter_r:
-        raise ConnectionError("No response from Shelly 1PM - %s" % (URL))
+        raise ConnectionError("No response from Shelly Plug - %s" % (URL))
 
     meter_data = meter_r.json()
 
@@ -134,7 +134,7 @@ class DbusShelly1pmService:
   def _signOfLife(self):
     logging.info("--- Start: sign of life ---")
     logging.info("Last _update() call: %s" % (self._lastUpdate))
-    logging.info("Last '/Ac/Power': %s" % (self._dbusservice['/Ac/Power']))
+    logging.info("Last '/Ac/Out/L1/V': %s" % (self._dbusservice['/Ac/Out/L1/V']))
     logging.info("--- End: sign of life ---")
     return True
 
@@ -146,36 +146,36 @@ class DbusShelly1pmService:
        config = self._getConfig()
        str(config['DEFAULT']['Phase'])
 
-       pvinverter_phase = str(config['DEFAULT']['Phase'])
+       inverter_phase = str(config['DEFAULT']['Phase'])
 
        #send data to DBus
-       for phase in ['L1', 'L2', 'L3']:
-         pre = '/Ac/' + phase
+       for phase in ['L1']:
+         pre = '/Ac/Out/' + phase
 
-         if phase == pvinverter_phase:
+         if phase == inverter_phase:
            power = meter_data['meters'][0]['power']
            total = meter_data['meters'][0]['total']
-           voltage = 230
+           voltage = 120
            current = power / voltage
 
-           self._dbusservice[pre + '/Voltage'] = voltage
-           self._dbusservice[pre + '/Current'] = current
-           self._dbusservice[pre + '/Power'] = power
+           self._dbusservice[pre + '/V'] = voltage
+           self._dbusservice[pre + '/I'] = current
+           self._dbusservice[pre + '/P'] = power
            if power > 0:
-             self._dbusservice[pre + '/Energy/Forward'] = total/1000/60 
+             self._dbusservice['/State'] = 9
+           else:
+             self._dbusservice['/State'] = 0
 
          else:
-           self._dbusservice[pre + '/Voltage'] = 0
-           self._dbusservice[pre + '/Current'] = 0
-           self._dbusservice[pre + '/Power'] = 0
-           self._dbusservice[pre + '/Energy/Forward'] = 0
+           self._dbusservice[pre + '/V'] = 0
+           self._dbusservice[pre + '/I'] = 0
+           self._dbusservice[pre + '/P'] = 0
+           self._dbusservice['/State'] = 0
 
-       self._dbusservice['/Ac/Power'] = self._dbusservice['/Ac/' + pvinverter_phase + '/Power']
-       self._dbusservice['/Ac/Energy/Forward'] = self._dbusservice['/Ac/' + pvinverter_phase + '/Energy/Forward']
+       self._dbusservice['/Ac/Out/L1/P'] = self._dbusservice['/Ac/Out/' + inverter_phase + '/Power']
 
        #logging
-       logging.debug("House Consumption (/Ac/Power): %s" % (self._dbusservice['/Ac/Power']))
-       logging.debug("House Forward (/Ac/Energy/Forward): %s" % (self._dbusservice['/Ac/Energy/Forward']))
+       logging.debug("Inverter Consumption (/Ac/Out/L1/P): %s" % (self._dbusservice['/Ac/Out/L1/P']))
        logging.debug("---");
 
        # increment UpdateIndex - to show that new data is available
@@ -217,32 +217,22 @@ def main():
 
       #formatting
       _kwh = lambda p, v: (str(round(v, 2)) + 'kWh')
+      _state = lambda p, v: (str(v))
+      _mode = lambda p, v: (str(v))
       _a = lambda p, v: (str(round(v, 1)) + 'A')
       _w = lambda p, v: (str(round(v, 1)) + 'W')
       _v = lambda p, v: (str(round(v, 1)) + 'V')
 
       #start our main-service
       pvac_output = DbusShelly1pmService(
-        servicename='com.victronenergy.pvinverter',
+        servicename='com.victronenergy.inverter',
         paths={
-          '/Ac/Energy/Forward': {'initial': None, 'textformat': _kwh}, # energy produced by pv inverter
-          '/Ac/Power': {'initial': 0, 'textformat': _w},
-
-          '/Ac/Current': {'initial': 0, 'textformat': _a},
+          '/Ac/Out/L1/V': {'initial': 0, 'textformat': _v},
+          '/Ac/Out/L1/I': {'initial': 0, 'textformat': _a},
+          '/Ac/Out/L1/P': {'initial': 0, 'textformat': _w},
           '/Ac/Voltage': {'initial': 0, 'textformat': _v},
-
-          '/Ac/L1/Voltage': {'initial': 0, 'textformat': _v},
-          '/Ac/L2/Voltage': {'initial': 0, 'textformat': _v},
-          '/Ac/L3/Voltage': {'initial': 0, 'textformat': _v},
-          '/Ac/L1/Current': {'initial': 0, 'textformat': _a},
-          '/Ac/L2/Current': {'initial': 0, 'textformat': _a},
-          '/Ac/L3/Current': {'initial': 0, 'textformat': _a},
-          '/Ac/L1/Power': {'initial': 0, 'textformat': _w},
-          '/Ac/L2/Power': {'initial': 0, 'textformat': _w},
-          '/Ac/L3/Power': {'initial': 0, 'textformat': _w},
-          '/Ac/L1/Energy/Forward': {'initial': None, 'textformat': _kwh},
-          '/Ac/L2/Energy/Forward': {'initial': None, 'textformat': _kwh},
-          '/Ac/L3/Energy/Forward': {'initial': None, 'textformat': _kwh},
+          '/State': {'initial': 0, 'textformat': _state},
+          '/Mode': {'initial': 4, 'textformat': _mode},
         })
 
       logging.info('Connected to dbus, and switching over to gobject.MainLoop() (= event based)')
