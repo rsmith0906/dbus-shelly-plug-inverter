@@ -17,7 +17,7 @@ This project is my first on GitHub and with the Victron Venus OS, so I took some
 ## How it works
 ### My setup
 - 1-Phase installation
-- Shelly Plug with latest firmware (20220209-094317/v1.11.8-g8c7bb8d)
+- Shelly Plug with latest firmware
   - Measuring AC output of Off-Grid Inverter
   - Connected to Wifi netowrk "A" with a known IP  
 - Venus OS on Raspberry PI 4 4GB version 1.1 - Firmware v2.84
@@ -52,7 +52,7 @@ After that call the install.sh script.
 The following script should do everything for you:
 ```
 wget https://github.com/rsmith0906/dbus-shelly-plug-inverter/archive/refs/heads/main.zip
-unzip main.zip "dbus-shelly-1pm-pvinverter-main/*" -d /data
+unzip main.zip "dbus-shelly-plug-inverter-main/*" -d /data
 mv /data/dbus-shelly-plug-inverter-main /data/dbus-shelly-plug-inverter
 chmod a+x /data/dbus-shelly-plug-inverter/install.sh
 /data/dbus-shelly-plug-inverter/install.sh
