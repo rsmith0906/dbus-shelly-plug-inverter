@@ -2,16 +2,11 @@
 Integrate Shelly Plug into Victron Energies Venus OS
 
 ## Purpose
-With the scripts in this repo it should be easy possible to install, uninstall, restart a service that connects the Shelly 1PM to the VenusOS and GX devices from Victron.
-Idea is inspired on @fabian-lauer project linked below.
-
-
+With the scripts in this repo it should be easy possible to install, uninstall, restart a service that connects the Shelly Plug to the VenusOS and GX devices from Victron.
+Idea is inspired on @vikt0rm project linked below.
 
 ## Inspiration
-This project is my first on GitHub and with the Victron Venus OS, so I took some ideas and approaches from the following projects - many thanks for sharing the knowledge:
-- https://github.com/fabian-lauer/dbus-shelly-3em-smartmeter
-- https://shelly-api-docs.shelly.cloud/gen1/#shelly1-shelly1pm
-- https://github.com/victronenergy/venus/wiki/dbus#pv-inverters
+This project with the Victron Venus OS, so I took some ideas and approaches from the following projects - many thanks for sharing the knowledge:
 - https://github.com/vikt0rm/dbus-shelly-1pm-pvinverter
 
 ## How it works
@@ -25,15 +20,15 @@ This project is my first on GitHub and with the Victron Venus OS, so I took some
   - Connected to Wifi netowrk "A"
 
 ### Details / Process
-As mentioned above the script is inspired by @fabian-lauer dbus-shelly-3em-smartmeter implementation.
+As mentioned above the script is inspired by @vikt0rm dbus-shelly-1em-pvinverter implementation.
 So what is the script doing:
 - Running as a service
-- connecting to DBus of the Venus OS `com.victronenergy.pvinverter.http_{DeviceInstanceID_from_config}`
-- After successful DBus connection Shelly 1PM is accessed via REST-API - simply the /status is called and a JSON is returned with all details
+- connecting to DBus of the Venus OS `com.victronenergy.inverter.http_{DeviceInstanceID_from_config}`
+- After successful DBus connection Shelly Plug is accessed via REST-API - simply the /status is called and a JSON is returned with all details
   A sample JSON file from Shelly 1PM can be found [here](docs/shelly1pm-status-sample.json)
 - Serial/MAC is taken from the response as device serial
 - Paths are added to the DBus with default value 0 - including some settings like name, etc
-- After that a "loop" is started which pulls Shelly 1PM data every 750ms from the REST-API and updates the values in the DBus
+- After that a "loop" is started which pulls Shelly Plug data every 750ms from the REST-API and updates the values in the DBus
 
 Thats it 😄
 
