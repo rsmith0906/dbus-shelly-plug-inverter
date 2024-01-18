@@ -1,5 +1,5 @@
 # dbus-shelly-1pm-pvinverter
-Integrate Shelly 1PM into Victron Energies Venus OS
+Integrate Shelly Plug into Victron Energies Venus OS
 
 ## Purpose
 With the scripts in this repo it should be easy possible to install, uninstall, restart a service that connects the Shelly 1PM to the VenusOS and GX devices from Victron.
