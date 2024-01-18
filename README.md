@@ -51,17 +51,17 @@ After that call the install.sh script.
 
 The following script should do everything for you:
 ```
-wget https://github.com/vikt0rm/dbus-shelly-1pm-pvinverter/archive/refs/heads/main.zip
+wget https://github.com/rsmith0906/dbus-shelly-plug-inverter/archive/refs/heads/main.zip
 unzip main.zip "dbus-shelly-1pm-pvinverter-main/*" -d /data
-mv /data/dbus-shelly-1pm-pvinverter-main /data/dbus-shelly-1pm-pvinverter
-chmod a+x /data/dbus-shelly-1pm-pvinverter/install.sh
-/data/dbus-shelly-1pm-pvinverter/install.sh
+mv /data/dbus-shelly-plug-inverter-main /data/dbus-shelly-plug-inverter
+chmod a+x /data/dbus-shelly-plug-inverter/install.sh
+/data/dbus-shelly-plug-inverter/install.sh
 rm main.zip
 ```
 ⚠️ Check configuration after that - because service is already installed an running and with wrong connection data (host, username, pwd) you will spam the log-file
 
 ### Change config.ini
-Within the project there is a file `/data/dbus-shelly-1pm-pvinverter/config.ini` - just change the values - most important is the deviceinstance, custom name and phase under "DEFAULT" and host, username and password in section "ONPREMISE". More details below:
+Within the project there is a file `/data/dbus-shelly-plug-inverter/config.ini` - just change the values - most important is the deviceinstance, custom name and phase under "DEFAULT" and host, username and password in section "ONPREMISE". More details below:
 
 | Section  | Config vlaue | Explanation |
 | ------------- | ------------- | ------------- |
