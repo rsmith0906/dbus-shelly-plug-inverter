@@ -50,7 +50,7 @@ class DbusShelly1pmService:
     self._dbusservice.add_path('/Position', int(config['DEFAULT']['Position']))
     self._dbusservice.add_path('/Serial', self._getShellySerial())
     self._dbusservice.add_path('/UpdateIndex', 0)
-    self._dbusservice.add_path('/State', 0)  # Dummy path so VRM detects us as a inverter.
+    #self._dbusservice.add_path('/State', 0)  # Dummy path so VRM detects us as a inverter.
 
     # add path values to dbus
     for path, settings in self._paths.items():
