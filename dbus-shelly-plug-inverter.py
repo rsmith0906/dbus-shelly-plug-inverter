@@ -67,21 +67,23 @@ class DbusShelly1pmService:
     gobject.timeout_add(self._getSignOfLifeInterval()*60*1000, self._signOfLife)
 
   def _getShellySerial(self):
-    meter_data = self._getShellyData()
+    #meter_data = self._getShellyData()
 
-    if not meter_data['mac']:
-        raise ValueError("Response does not contain 'mac' attribute")
+    #if not meter_data['mac']:
+    #    raise ValueError("Response does not contain 'mac' attribute")
 
-    serial = meter_data['mac']
+    #serial = meter_data['mac']
+    serial = '000000000'
     return serial
 
   def _getShellyFWVersion(self):
-    meter_data = self._getShellyData()
+    #meter_data = self._getShellyData()
 
-    if not meter_data['update']['old_version']:
-        raise ValueError("Response does not contain 'update/old_version' attribute")
+    #if not meter_data['update']['old_version']:
+    #    raise ValueError("Response does not contain 'update/old_version' attribute")
 
-    ver = meter_data['update']['old_version']
+    #ver = meter_data['update']['old_version']
+    ver = "1.0"
     return ver
 
   def _getConfig(self):
@@ -140,8 +142,8 @@ class DbusShelly1pmService:
 
   def _update(self):
     try:
-       #get data from Shelly 1pm
-       meter_data = self._getShellyData()
+       #get data from Shelly Plug
+       #meter_data = self._getShellyData()
 
        config = self._getConfig()
        str(config['DEFAULT']['Phase'])
@@ -153,9 +155,10 @@ class DbusShelly1pmService:
          pre = '/Ac/Out/' + phase
 
          if phase == inverter_phase:
-           power = meter_data['meters'][0]['power']
-           total = meter_data['meters'][0]['total']
+           #power = meter_data['meters'][0]['power']
+           #total = meter_data['meters'][0]['total']
            voltage = 120
+           power = 1200
            current = power / voltage
 
            self._dbusservice[pre + '/V'] = voltage
