@@ -15,8 +15,9 @@ This project with the Victron Venus OS, so I took some ideas and approaches from
 - Shelly Plug with latest firmware
   - Measuring AC output of Off-Grid Inverter
   - Connected to Wifi netowrk "A" with a known IP  
-- Venus OS on Raspberry PI 4 4GB version 1.1 - Firmware v2.84
-  - No other devices from Victron connected
+- Venus OS on Raspberry PI 3 4GB
+  - Victron 150/45 Solar Charge Controller
+  - Victron SmartShunt
   - Connected to Wifi netowrk "A"
 
 ### Details / Process
