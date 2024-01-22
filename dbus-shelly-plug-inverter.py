@@ -4,6 +4,7 @@
 import datetime
 import platform
 import logging
+import socket
 import sys
 import os
 import sys
@@ -65,7 +66,7 @@ class DbusShelly1pmService:
     self._checkSecs = 1
 
     # add _update function 'timer'
-    gobject.timeout_add(250, self._update) # pause 250ms before the next request
+    gobject.timeout_add(500, self._update) # pause 500ms before the next request
 
     # add _signOfLife 'timer' to get feedback in log every 5minutes
     gobject.timeout_add(self._getSignOfLifeInterval()*60*1000, self._signOfLife)
@@ -161,9 +162,19 @@ class DbusShelly1pmService:
     if not meter_data:
         raise ValueError("Converting response to JSON failed")
 
-
     return meter_data
 
+  def test_device(ip):
+    try:
+        # Create a socket object
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            # Set a timeout for the connection
+            s.settimeout(1)
+            # Try to connect to the specified IP and port
+            s.connect((ip, 80))
+            return True
+    except socket.error as e:
+        return False
 
   def _signOfLife(self):
     logging.info("--- Start: sign of life ---")
@@ -174,17 +185,13 @@ class DbusShelly1pmService:
 
   def _update(self):
     try:
-      checkDiff = datetime.now() - self._lastCheck
-      checkSecs = checkDiff.total_seconds()
+      config = self._getConfig()
 
-      if checkSecs >= self._checkSecs:
+      IP = config['ONPREMISE']['Host']
+
+      if self.test_device(IP):
         #get data from Shelly Plug
         meter_data = self._getShellyData()
-
-        config = self._getConfig()
-        str(config['DEFAULT']['Phase'])
-
-        inverter_phase = str(config['DEFAULT']['Phase'])
 
         #send data to DBus
         for phase in ['L1']:
@@ -203,28 +210,28 @@ class DbusShelly1pmService:
             else:
               self._dbusservice['/State'] = 0
 
-        self._dbusservice['/Ac/Out/L1/P'] = self._dbusservice['/Ac/Out/' + inverter_phase + '/P']
+          self._dbusservice['/Ac/Out/L1/P'] = self._dbusservice['/Ac/Out/' + inverter_phase + '/P']
 
-        #logging
-        logging.debug("Inverter Consumption (/Ac/Out/L1/P): %s" % (self._dbusservice['/Ac/Out/L1/P']))
-        logging.debug("---");
+          #logging
+          logging.debug("Inverter Consumption (/Ac/Out/L1/P): %s" % (self._dbusservice['/Ac/Out/L1/P']))
+          logging.debug("---");
 
-        # increment UpdateIndex - to show that new data is available
-        index = self._dbusservice['/UpdateIndex'] + 1  # increment index
-        if index > 255:   # maximum value of the index
-          index = 0       # overflow from 255 to 0
-        self._dbusservice['/UpdateIndex'] = index
+          # increment UpdateIndex - to show that new data is available
+          index = self._dbusservice['/UpdateIndex'] + 1  # increment index
+          if index > 255:   # maximum value of the index
+            index = 0       # overflow from 255 to 0
+          self._dbusservice['/UpdateIndex'] = index
 
-        #update lastupdate vars
-        self._lastUpdate = time.time()
-        self._lastCheck = datetime.now()
-        self._checkSecs = 1
+          #update lastupdate vars
+          self._lastUpdate = time.time()
+
+      else:
+        self._dbusservice['/Ac/Out/L1/P'] = 0
+        self._dbusservice['/State'] = 0
+
+      inverter_phase = str(config['DEFAULT']['Phase'])
     except Exception as e:
        logging.critical('Error at %s', '_update', exc_info=e)
-       self._dbusservice['/Ac/Out/L1/P'] = 0
-       self._dbusservice['/State'] = 0
-       self._checkSecs = 10
-       self._lastCheck = datetime.now()
        meter_data = None
 
     # return true, otherwise add_timeout will be removed from GObject - see docs http://library.isr.ist.utl.pt/docs/pygtk2reference/gobject-functions.html#function-gobject--timeout-add
