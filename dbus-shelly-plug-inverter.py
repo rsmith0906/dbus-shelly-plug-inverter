@@ -107,7 +107,7 @@ class DbusShelly1pmService:
 
     if accessType == 'OnPremise': 
         #URL = "http://%s:%s@%s/rpc" % (config['ONPREMISE']['Username'], config['ONPREMISE']['Password'], config['ONPREMISE']['Host'])
-        URL = "http://%s/rpc" % (config['ONPREMISE']['Username'])
+        URL = "http://%s/rpc" % (config['ONPREMISE']['Host'])
         URL = URL.replace(":@", "")
     else:
         raise ValueError("AccessType %s is not supported" % (config['DEFAULT']['AccessType']))
