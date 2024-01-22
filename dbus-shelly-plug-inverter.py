@@ -219,10 +219,17 @@ class DbusShelly1pmService:
             self._dbusservice[pre + '/V'] = voltage
             self._dbusservice[pre + '/I'] = current
             self._dbusservice[pre + '/P'] = power
+
             if power > 0:
-              self._dbusservice['/State'] = 9
+              if power > 5:
+                 self._dbusservice['/State'] = 9
+                 self._dbusservice['/Mode'] = 2
+              else:
+                 self._dbusservice['/State'] = 1
+                 self._dbusservice['/Mode'] = 5
             else:
               self._dbusservice['/State'] = 0
+              self._dbusservice['/Mode'] = 5
 
           self._dbusservice['/Ac/Out/L1/P'] = self._dbusservice['/Ac/Out/' + inverter_phase + '/P']
 
@@ -230,18 +237,19 @@ class DbusShelly1pmService:
           logging.debug("Inverter Consumption (/Ac/Out/L1/P): %s" % (self._dbusservice['/Ac/Out/L1/P']))
           logging.debug("---");
 
-          # increment UpdateIndex - to show that new data is available
-          index = self._dbusservice['/UpdateIndex'] + 1  # increment index
-          if index > 255:   # maximum value of the index
-            index = 0       # overflow from 255 to 0
-          self._dbusservice['/UpdateIndex'] = index
-
-          #update lastupdate vars
-          self._lastUpdate = time.time()
-
       else:
         self._dbusservice['/Ac/Out/L1/P'] = 0
         self._dbusservice['/State'] = 0
+        self._dbusservice['/Mode'] = 4
+
+      # increment UpdateIndex - to show that new data is available
+      index = self._dbusservice['/UpdateIndex'] + 1  # increment index
+      if index > 255:   # maximum value of the index
+        index = 0       # overflow from 255 to 0
+      self._dbusservice['/UpdateIndex'] = index
+
+      #update lastupdate vars
+      self._lastUpdate = time.time()
 
       inverter_phase = str(config['DEFAULT']['Phase'])
     except Exception as e:
@@ -254,8 +262,6 @@ class DbusShelly1pmService:
   def _handlechangedvalue(self, path, value):
     logging.debug("someone else updated %s to %s" % (path, value))
     return True # accept the change
-
-
 
 def main():
   #configure logging
