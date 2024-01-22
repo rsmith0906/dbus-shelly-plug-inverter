@@ -63,6 +63,7 @@ class DbusShelly1pmService:
     # last update
     self._lastUpdate = 0
     self._checkSecs = 1
+    self._cachePower = -1
 
     # add _update function 'timer'
     gobject.timeout_add(500, self._update) # pause 500ms before the next request
@@ -196,12 +197,12 @@ class DbusShelly1pmService:
   def _update(self):
     try:
       config = self._getConfig()
+      updateData = True
 
       isAlive = self._isShellyAlive()
       if isAlive:
         #get data from Shelly Plug
         meter_data = self._getShellyData()
-
         inverter_phase = config['DEFAULT']['Phase']
 
         #send data to DBus
@@ -228,22 +229,19 @@ class DbusShelly1pmService:
               self._dbusservice['/State'] = 0
               self._dbusservice['/Mode'] = 5
 
-          self._dbusservice['/Ac/Out/L1/P'] = self._dbusservice['/Ac/Out/' + inverter_phase + '/P']
-
-          #logging
-          logging.debug("Inverter Consumption (/Ac/Out/L1/P): %s" % (self._dbusservice['/Ac/Out/L1/P']))
-          logging.debug("---");
+          if not self._cachePower == power:
+             self.save_data("Inverter", f"{{ \"Power\": \"{power}\" }}")
+             self._cachePower = power
+          else:
+             updateData = False
 
       else:
         self._dbusservice['/Ac/Out/L1/P'] = 0
         self._dbusservice['/State'] = 0
         self._dbusservice['/Mode'] = 4
 
-      # increment UpdateIndex - to show that new data is available
-      index = self._dbusservice['/UpdateIndex'] + 1  # increment index
-      if index > 255:   # maximum value of the index
-        index = 0       # overflow from 255 to 0
-      self._dbusservice['/UpdateIndex'] = index
+      if updateData:
+         self._signalChanges()
 
       #update lastupdate vars
       self._lastUpdate = time.time()
@@ -255,6 +253,28 @@ class DbusShelly1pmService:
 
     # return true, otherwise add_timeout will be removed from GObject - see docs http://library.isr.ist.utl.pt/docs/pygtk2reference/gobject-functions.html#function-gobject--timeout-add
     return True
+
+  def _signalChanges(self):
+    # increment UpdateIndex - to show that new data is available
+    index = self._dbusservice['/UpdateIndex'] + 1  # increment index
+    if index > 255:   # maximum value of the index
+      index = 0       # overflow from 255 to 0
+    self._dbusservice['/UpdateIndex'] = index
+
+  def save_data(self, key, value):
+    file = open(f"/tmp/{key}.json", 'w') 
+    file.write(value) 
+    file.close() 
+
+  def read_data(self, key):
+    try:
+      if os.path.exists(f"/tmp/{key}.json"):
+        with open(f"{key}.json", 'r') as file:
+          return json.load(file)
+      else:
+        return None
+    except Exception as e:
+      return None
 
   def _handlechangedvalue(self, path, value):
     logging.debug("someone else updated %s to %s" % (path, value))
