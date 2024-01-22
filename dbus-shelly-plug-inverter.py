@@ -190,10 +190,7 @@ class DbusShelly1pmService:
         return False
 
   def _signOfLife(self):
-    logging.info("--- Start: sign of life ---")
-    logging.info("Last _update() call: %s" % (self._lastUpdate))
-    logging.info("Last '/Ac/Out/L1/V': %s" % (self._dbusservice['/Ac/Out/L1/V']))
-    logging.info("--- End: sign of life ---")
+    logging.info("Start: sign of life - Last _update() call: %s" % (self._lastUpdate))
     return True
 
   def _update(self):
