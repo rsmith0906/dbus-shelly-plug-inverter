@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # import normal packages
+import datetime
 import platform
 import logging
 import sys
@@ -60,6 +61,8 @@ class DbusShelly1pmService:
 
     # last update
     self._lastUpdate = 0
+    self._lastCheck = datetime(2023, 12, 8)
+    self._checkSecs = 1
 
     # add _update function 'timer'
     gobject.timeout_add(250, self._update) # pause 250ms before the next request
@@ -171,49 +174,58 @@ class DbusShelly1pmService:
 
   def _update(self):
     try:
-       #get data from Shelly Plug
-       meter_data = self._getShellyData()
+      checkDiff = datetime.now() - self._lastCheck
+      checkSecs = checkDiff.total_seconds()
 
-       config = self._getConfig()
-       str(config['DEFAULT']['Phase'])
+      if checkSecs >= self._checkSecs:
+        #get data from Shelly Plug
+        meter_data = self._getShellyData()
 
-       inverter_phase = str(config['DEFAULT']['Phase'])
+        config = self._getConfig()
+        str(config['DEFAULT']['Phase'])
 
-       #send data to DBus
-       for phase in ['L1']:
-         pre = '/Ac/Out/' + phase
+        inverter_phase = str(config['DEFAULT']['Phase'])
 
-         if phase == inverter_phase:
-           power = meter_data['result']['switch:0']['apower']
-           voltage = meter_data['result']['switch:0']['voltage']
-           current = meter_data['result']['switch:0']['current']
+        #send data to DBus
+        for phase in ['L1']:
+          pre = '/Ac/Out/' + phase
 
-           self._dbusservice[pre + '/V'] = voltage
-           self._dbusservice[pre + '/I'] = current
-           self._dbusservice[pre + '/P'] = power
-           if power > 0:
-             self._dbusservice['/State'] = 9
-           else:
-             self._dbusservice['/State'] = 0
+          if phase == inverter_phase:
+            power = meter_data['result']['switch:0']['apower']
+            voltage = meter_data['result']['switch:0']['voltage']
+            current = meter_data['result']['switch:0']['current']
 
-       self._dbusservice['/Ac/Out/L1/P'] = self._dbusservice['/Ac/Out/' + inverter_phase + '/P']
+            self._dbusservice[pre + '/V'] = voltage
+            self._dbusservice[pre + '/I'] = current
+            self._dbusservice[pre + '/P'] = power
+            if power > 0:
+              self._dbusservice['/State'] = 9
+            else:
+              self._dbusservice['/State'] = 0
 
-       #logging
-       logging.debug("Inverter Consumption (/Ac/Out/L1/P): %s" % (self._dbusservice['/Ac/Out/L1/P']))
-       logging.debug("---");
+        self._dbusservice['/Ac/Out/L1/P'] = self._dbusservice['/Ac/Out/' + inverter_phase + '/P']
 
-       # increment UpdateIndex - to show that new data is available
-       index = self._dbusservice['/UpdateIndex'] + 1  # increment index
-       if index > 255:   # maximum value of the index
-         index = 0       # overflow from 255 to 0
-       self._dbusservice['/UpdateIndex'] = index
+        #logging
+        logging.debug("Inverter Consumption (/Ac/Out/L1/P): %s" % (self._dbusservice['/Ac/Out/L1/P']))
+        logging.debug("---");
 
-       #update lastupdate vars
-       self._lastUpdate = time.time()
+        # increment UpdateIndex - to show that new data is available
+        index = self._dbusservice['/UpdateIndex'] + 1  # increment index
+        if index > 255:   # maximum value of the index
+          index = 0       # overflow from 255 to 0
+        self._dbusservice['/UpdateIndex'] = index
+
+        #update lastupdate vars
+        self._lastUpdate = time.time()
+        self._lastCheck = datetime.now()
+        self._checkSecs = 1
     except Exception as e:
        logging.critical('Error at %s', '_update', exc_info=e)
        self._dbusservice['/Ac/Out/L1/P'] = 0
        self._dbusservice['/State'] = 0
+       self._checkSecs = 10
+       self._lastCheck = datetime.now()
+       meter_data = None
 
     # return true, otherwise add_timeout will be removed from GObject - see docs http://library.isr.ist.utl.pt/docs/pygtk2reference/gobject-functions.html#function-gobject--timeout-add
     return True
