@@ -6,6 +6,7 @@ import logging
 import sys
 import os
 import sys
+import json
 if sys.version_info.major == 2:
     import gobject
 else:
@@ -67,21 +68,21 @@ class DbusShelly1pmService:
     gobject.timeout_add(self._getSignOfLifeInterval()*60*1000, self._signOfLife)
 
   def _getShellySerial(self):
-    meter_data = self._getShellyData()
+    device_info = self._getShellyDeviceInfo()
 
-    if not meter_data['mac']:
+    if not device_info['result']['mac']:
         raise ValueError("Response does not contain 'mac' attribute")
 
-    serial = meter_data['mac']
+    serial = device_info['result']['mac']
     return serial
 
   def _getShellyFWVersion(self):
-    meter_data = self._getShellyData()
+    device_info = self._getShellyDeviceInfo()
 
-    if not meter_data['update']['old_version']:
-        raise ValueError("Response does not contain 'update/old_version' attribute")
+    if not device_info['result']['fw_id']:
+        raise ValueError("Response does not contain 'result/fw_id' attribute")
 
-    ver = meter_data['update']['old_version']
+    ver = device_info['result']['fw_id']
     return ver
 
   def _getConfig(self):
@@ -105,17 +106,47 @@ class DbusShelly1pmService:
     accessType = config['DEFAULT']['AccessType']
 
     if accessType == 'OnPremise': 
-        URL = "http://%s:%s@%s/status" % (config['ONPREMISE']['Username'], config['ONPREMISE']['Password'], config['ONPREMISE']['Host'])
+        #URL = "http://%s:%s@%s/rpc" % (config['ONPREMISE']['Username'], config['ONPREMISE']['Password'], config['ONPREMISE']['Host'])
+        URL = "http://%s/rpc" % (config['ONPREMISE']['Username'])
         URL = URL.replace(":@", "")
     else:
         raise ValueError("AccessType %s is not supported" % (config['DEFAULT']['AccessType']))
 
     return URL
 
+  def _getShellyDeviceInfo(self):
+    URL = self._getShellyStatusUrl()
+
+    data = {
+        'id': 0,
+        'method': 'Shelly.GetDeviceInfo'
+    }
+
+    json_data = json.dumps(data)
+    device_info = requests.post(url = URL, data=json_data, headers={'Content-Type': 'application/json'})
+
+    # check for response
+    if not device_info:
+        raise ConnectionError("No response from Shelly Plug - %s" % (URL))
+
+    dev_info = device_info.json()
+
+    # check for Json
+    if not dev_info:
+        raise ValueError("Converting response to JSON failed")
+
+    return dev_info
 
   def _getShellyData(self):
     URL = self._getShellyStatusUrl()
-    meter_r = requests.get(url = URL)
+
+    data = {
+        'id': 0,
+        'method': 'Shelly.GetStatus'
+    }
+
+    json_data = json.dumps(data)
+    meter_r = requests.post(url = URL, data=json_data, headers={'Content-Type': 'application/json'})
 
     # check for response
     if not meter_r:
@@ -140,7 +171,7 @@ class DbusShelly1pmService:
 
   def _update(self):
     try:
-       #get data from Shelly 1pm
+       #get data from Shelly Plug
        meter_data = self._getShellyData()
 
        config = self._getConfig()
@@ -153,10 +184,9 @@ class DbusShelly1pmService:
          pre = '/Ac/Out/' + phase
 
          if phase == inverter_phase:
-           power = meter_data['meters'][0]['power']
-           total = meter_data['meters'][0]['total']
-           voltage = 120
-           current = power / voltage
+           power = meter_data['result']['switch:0']['apower']
+           voltage = meter_data['result']['switch:0']['voltage']
+           current = meter_data['result']['switch:0']['current']
 
            self._dbusservice[pre + '/V'] = voltage
            self._dbusservice[pre + '/I'] = current
@@ -172,7 +202,7 @@ class DbusShelly1pmService:
            self._dbusservice[pre + '/P'] = 0
            self._dbusservice['/State'] = 0
 
-       self._dbusservice['/Ac/Out/L1/P'] = self._dbusservice['/Ac/Out/' + inverter_phase + '/Power']
+       self._dbusservice['/Ac/Out/L1/P'] = self._dbusservice['/Ac/Out/' + inverter_phase + '/P']
 
        #logging
        logging.debug("Inverter Consumption (/Ac/Out/L1/P): %s" % (self._dbusservice['/Ac/Out/L1/P']))
