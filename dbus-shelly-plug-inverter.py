@@ -73,21 +73,25 @@ class DbusShelly1pmService:
 
   def _getShellySerial(self):
     device_info = self._getShellyDeviceInfo()
+    if device_info:
+      if not device_info['result']['mac']:
+          raise ValueError("Response does not contain 'mac' attribute")
 
-    if not device_info['result']['mac']:
-        raise ValueError("Response does not contain 'mac' attribute")
-
-    serial = device_info['result']['mac']
-    return serial
+      serial = device_info['result']['mac']
+      return serial
+    else:
+      return "00000"
 
   def _getShellyFWVersion(self):
     device_info = self._getShellyDeviceInfo()
+    if device_info:
+      if not device_info['result']['fw_id']:
+          raise ValueError("Response does not contain 'result/fw_id' attribute")
 
-    if not device_info['result']['fw_id']:
-        raise ValueError("Response does not contain 'result/fw_id' attribute")
-
-    ver = device_info['result']['fw_id']
-    return ver
+      ver = device_info['result']['fw_id']
+      return ver
+    else:
+      return "9.0"
 
   def _getConfig(self):
     config = configparser.ConfigParser()
@@ -118,28 +122,38 @@ class DbusShelly1pmService:
 
     return URL
 
+  def _isShellyAlive(self):
+     config = self._getConfig()
+     IP = config['ONPREMISE']['Host']
+     isAlive = self.test_device(IP)
+     return isAlive
+
   def _getShellyDeviceInfo(self):
-    URL = self._getShellyStatusUrl()
+    isAlive = self._isShellyAlive()
+    if isAlive:
+      URL = self._getShellyStatusUrl()
 
-    data = {
-        'id': 0,
-        'method': 'Shelly.GetDeviceInfo'
-    }
+      data = {
+          'id': 0,
+          'method': 'Shelly.GetDeviceInfo'
+      }
 
-    json_data = json.dumps(data)
-    device_info = requests.post(url = URL, data=json_data, headers={'Content-Type': 'application/json'})
+      json_data = json.dumps(data)
+      device_info = requests.post(url = URL, data=json_data, headers={'Content-Type': 'application/json'})
 
-    # check for response
-    if not device_info:
-        raise ConnectionError("No response from Shelly Plug - %s" % (URL))
+      # check for response
+      if not device_info:
+          raise ConnectionError("No response from Shelly Plug - %s" % (URL))
 
-    dev_info = device_info.json()
+      dev_info = device_info.json()
 
-    # check for Json
-    if not dev_info:
-        raise ValueError("Converting response to JSON failed")
+      # check for Json
+      if not dev_info:
+          raise ValueError("Converting response to JSON failed")
 
-    return dev_info
+      return dev_info
+    else:
+      return None
 
   def _getShellyData(self):
     URL = self._getShellyStatusUrl()
@@ -187,9 +201,8 @@ class DbusShelly1pmService:
     try:
       config = self._getConfig()
 
-      IP = config['ONPREMISE']['Host']
-
-      if self.test_device(IP):
+      isAlive = self._isShellyAlive()
+      if isAlive:
         #get data from Shelly Plug
         meter_data = self._getShellyData()
 
