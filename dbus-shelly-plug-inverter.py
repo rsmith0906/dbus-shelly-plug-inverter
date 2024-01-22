@@ -62,7 +62,6 @@ class DbusShelly1pmService:
 
     # last update
     self._lastUpdate = 0
-    self._lastCheck = datetime(2023, 12, 8)
     self._checkSecs = 1
 
     # add _update function 'timer'
@@ -178,7 +177,7 @@ class DbusShelly1pmService:
 
     return meter_data
 
-  def test_device(ip):
+  def test_device(self, ip):
     try:
         # Create a socket object
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -205,6 +204,8 @@ class DbusShelly1pmService:
       if isAlive:
         #get data from Shelly Plug
         meter_data = self._getShellyData()
+
+        inverter_phase = config['DEFAULT']['Phase']
 
         #send data to DBus
         for phase in ['L1']:
