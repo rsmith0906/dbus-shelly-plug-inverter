@@ -180,7 +180,7 @@ class DbusShelly1pmService:
        inverter_phase = str(config['DEFAULT']['Phase'])
 
        #send data to DBus
-       for phase in ['L1','L2','L3']:
+       for phase in ['L1']:
          pre = '/Ac/Out/' + phase
 
          if phase == inverter_phase:
@@ -195,11 +195,6 @@ class DbusShelly1pmService:
              self._dbusservice['/State'] = 9
            else:
              self._dbusservice['/State'] = 0
-
-         else:
-           self._dbusservice[pre + '/V'] = None
-           self._dbusservice[pre + '/I'] = None
-           self._dbusservice[pre + '/P'] = None
 
        self._dbusservice['/Ac/Out/L1/P'] = self._dbusservice['/Ac/Out/' + inverter_phase + '/P']
 
@@ -259,12 +254,6 @@ def main():
           '/Ac/Out/L1/V': {'initial': 0, 'textformat': _v},
           '/Ac/Out/L1/I': {'initial': 0, 'textformat': _a},
           '/Ac/Out/L1/P': {'initial': 0, 'textformat': _w},
-          '/Ac/Out/L2/V': {'initial': None, 'textformat': _v},
-          '/Ac/Out/L2/I': {'initial': None, 'textformat': _a},
-          '/Ac/Out/L2/P': {'initial': None, 'textformat': _w},
-          '/Ac/Out/L3/V': {'initial': None, 'textformat': _v},
-          '/Ac/Out/L3/I': {'initial': None, 'textformat': _a},
-          '/Ac/Out/L3/P': {'initial': None, 'textformat': _w},
           '/Ac/Voltage': {'initial': 0, 'textformat': _v},
           '/State': {'initial': 0, 'textformat': _state},
           '/Mode': {'initial': 4, 'textformat': _mode},
