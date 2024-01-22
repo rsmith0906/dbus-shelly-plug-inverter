@@ -180,7 +180,7 @@ class DbusShelly1pmService:
        inverter_phase = str(config['DEFAULT']['Phase'])
 
        #send data to DBus
-       for phase in ['L1']:
+       for phase in ['L1','L2','L3']:
          pre = '/Ac/Out/' + phase
 
          if phase == inverter_phase:
@@ -197,10 +197,9 @@ class DbusShelly1pmService:
              self._dbusservice['/State'] = 0
 
          else:
-           self._dbusservice[pre + '/V'] = 0
-           self._dbusservice[pre + '/I'] = 0
-           self._dbusservice[pre + '/P'] = 0
-           self._dbusservice['/State'] = 0
+           self._dbusservice[pre + '/V'] = None
+           self._dbusservice[pre + '/I'] = None
+           self._dbusservice[pre + '/P'] = None
 
        self._dbusservice['/Ac/Out/L1/P'] = self._dbusservice['/Ac/Out/' + inverter_phase + '/P']
 
