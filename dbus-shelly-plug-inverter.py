@@ -195,6 +195,7 @@ class DbusShelly1pmService:
     return True
 
   def _update(self):
+    #while True:
     try:
       config = self._getConfig()
       updateData = True
@@ -203,54 +204,56 @@ class DbusShelly1pmService:
       if isAlive:
         #get data from Shelly Plug
         meter_data = self._getShellyData()
-        inverter_phase = config['DEFAULT']['Phase']
+        if meter_data:
+          inverter_phase = config['DEFAULT']['Phase']
 
-        #send data to DBus
-        for phase in ['L1']:
-          pre = '/Ac/Out/' + phase
+          #send data to DBus
+          for phase in ['L1']:
+            pre = '/Ac/Out/' + phase
 
-          if phase == inverter_phase:
-            power = meter_data['result']['switch:0']['apower']
-            voltage = meter_data['result']['switch:0']['voltage']
-            current = meter_data['result']['switch:0']['current']
+            if phase == inverter_phase:
+              power = meter_data['result']['switch:0']['apower']
+              voltage = meter_data['result']['switch:0']['voltage']
+              current = meter_data['result']['switch:0']['current']
 
-            self._dbusservice[pre + '/V'] = voltage
-            self._dbusservice[pre + '/I'] = current
-            self._dbusservice[pre + '/P'] = power
+              self._dbusservice[pre + '/V'] = voltage
+              self._dbusservice[pre + '/I'] = current
+              self._dbusservice[pre + '/P'] = power
 
-            if power > 0:
-              if power > 5:
-                 self._dbusservice['/State'] = 9
-                 self._dbusservice['/Mode'] = 2
+              if power > 0:
+                if power > 5:
+                  self._dbusservice['/State'] = 9
+                  self._dbusservice['/Mode'] = 2
+                else:
+                  self._dbusservice['/State'] = 1
+                  self._dbusservice['/Mode'] = 5
               else:
-                 self._dbusservice['/State'] = 1
-                 self._dbusservice['/Mode'] = 5
+                self._dbusservice['/State'] = 0
+                self._dbusservice['/Mode'] = 5
+
+            if not self._cachePower == power:
+              self.save_data("Inverter", f"{{ \"Power\": \"{power}\" }}")
+              self._cachePower = power
             else:
-              self._dbusservice['/State'] = 0
-              self._dbusservice['/Mode'] = 5
-
-          if not self._cachePower == power:
-             self.save_data("Inverter", f"{{ \"Power\": \"{power}\" }}")
-             self._cachePower = power
-          else:
-             updateData = False
-
+              updateData = False
+        else:
+          logging.warning(f"meter_data not available")
       else:
         self._dbusservice['/Ac/Out/L1/P'] = 0
         self._dbusservice['/State'] = 0
         self._dbusservice['/Mode'] = 4
 
       if updateData:
-         self._signalChanges()
+        self._signalChanges()
 
       #update lastupdate vars
       self._lastUpdate = time.time()
 
       inverter_phase = str(config['DEFAULT']['Phase'])
     except Exception as e:
-       logging.critical('Error at %s', '_update', exc_info=e)
-       meter_data = None
-
+      logging.critical('Error at %s', '_update', exc_info=e)
+      meter_data = None
+      time.sleep(5)
     # return true, otherwise add_timeout will be removed from GObject - see docs http://library.isr.ist.utl.pt/docs/pygtk2reference/gobject-functions.html#function-gobject--timeout-add
     return True
 
