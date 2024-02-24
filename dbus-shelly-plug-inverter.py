@@ -261,6 +261,7 @@ class DbusShelly1pmService:
       meter_data = None
       push = pb.push_note("Shell Plug Inverter Error", e)
     # return true, otherwise add_timeout will be removed from GObject - see docs http://library.isr.ist.utl.pt/docs/pygtk2reference/gobject-functions.html#function-gobject--timeout-add
+      
     return True
 
   def _signalChanges(self):
