@@ -17,6 +17,7 @@ import sys
 import time
 import requests # for http GET
 import configparser # for config/ini file
+from pushbullet import Pushbullet
 
 # our own packages from victron
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), '/opt/victronenergy/dbus-systemcalc-py/ext/velib_python'))
@@ -28,6 +29,11 @@ class DbusShelly1pmService:
     config = self._getConfig()
     deviceinstance = int(config['DEFAULT']['Deviceinstance'])
     customname = config['DEFAULT']['CustomName']
+    pbApiKey = config['DEFAULT']['PushBulletKey']
+
+    pb = Pushbullet(pbApiKey)
+
+    push = pb.push_note("Shell Plug Inverter Error", "Test")
 
     self._dbusservice = VeDbusService("{}.http_{:02d}".format(servicename, deviceinstance))
     self._paths = paths
@@ -253,7 +259,7 @@ class DbusShelly1pmService:
     except Exception as e:
       logging.critical('Error at %s', '_update', exc_info=e)
       meter_data = None
-      time.sleep(5)
+      push = pb.push_note("Shell Plug Inverter Error", e)
     # return true, otherwise add_timeout will be removed from GObject - see docs http://library.isr.ist.utl.pt/docs/pygtk2reference/gobject-functions.html#function-gobject--timeout-add
     return True
 
