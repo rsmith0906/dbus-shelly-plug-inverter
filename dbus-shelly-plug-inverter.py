@@ -33,7 +33,7 @@ class DbusShelly1pmService:
 
     pb = Pushbullet(pbApiKey)
 
-    push = pb.push_note("Shell Plug Inverter Error", "Test")
+    push = pb.push_note("Shelly Plug Inverter Started", "")
 
     self._dbusservice = VeDbusService("{}.http_{:02d}".format(servicename, deviceinstance))
     self._paths = paths
