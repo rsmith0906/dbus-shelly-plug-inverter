@@ -32,7 +32,6 @@ class DbusShelly1pmService:
     pbApiKey = config['DEFAULT']['PushBulletKey']
 
     pb = Pushbullet(pbApiKey)
-
     push = pb.push_note("Shelly Plug Inverter Started", "")
 
     self._dbusservice = VeDbusService("{}.http_{:02d}".format(servicename, deviceinstance))
