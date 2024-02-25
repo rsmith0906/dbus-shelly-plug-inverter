@@ -216,41 +216,51 @@ class DbusShelly1pmService:
       isAlive = self._isShellyAlive()
       if isAlive:
         #get data from Shelly Plug
-        meter_data = self._getShellyData()
-        if meter_data:
-          inverter_phase = config['DEFAULT']['Phase']
+        try:
+          meter_data = self._getShellyData()
+          if meter_data:
+            inverter_phase = config['DEFAULT']['Phase']
 
-          #send data to DBus
-          for phase in ['L1']:
-            pre = '/Ac/Out/' + phase
+            #send data to DBus
+            for phase in ['L1']:
+              pre = '/Ac/Out/' + phase
 
-            if phase == inverter_phase:
-              power = meter_data['result']['switch:0']['apower']
-              voltage = meter_data['result']['switch:0']['voltage']
-              current = meter_data['result']['switch:0']['current']
+              if phase == inverter_phase:
+                result = meter_data['result']
+                if result:
+                  switch = result['switch:0']
+                  if switch:
+                    power = switch['apower']
+                    voltage = switch['voltage']
+                    current = switch['current']
 
-              self._dbusservice[pre + '/V'] = voltage
-              self._dbusservice[pre + '/I'] = current
-              self._dbusservice[pre + '/P'] = power
+                    self._dbusservice[pre + '/V'] = voltage
+                    self._dbusservice[pre + '/I'] = current
+                    self._dbusservice[pre + '/P'] = power
 
-              if power > 0:
-                if power > 5:
-                  self._dbusservice['/State'] = 9
-                  self._dbusservice['/Mode'] = 2
-                else:
-                  self._dbusservice['/State'] = 1
-                  self._dbusservice['/Mode'] = 5
+                    if power > 0:
+                      if power > 5:
+                        self._dbusservice['/State'] = 9
+                        self._dbusservice['/Mode'] = 2
+                      else:
+                        self._dbusservice['/State'] = 1
+                        self._dbusservice['/Mode'] = 5
+                    else:
+                      self._dbusservice['/State'] = 0
+                      self._dbusservice['/Mode'] = 5
+
+              if not self._cachePower == power:
+                self.save_data("Inverter", f"{{ \"Power\": \"{power}\" }}")
+                self._cachePower = power
               else:
-                self._dbusservice['/State'] = 0
-                self._dbusservice['/Mode'] = 5
+                updateData = False
+          else:
+            logging.warning(f"meter_data not available")
+            push = pb.push_note("meter_data not available")
 
-            if not self._cachePower == power:
-              self.save_data("Inverter", f"{{ \"Power\": \"{power}\" }}")
-              self._cachePower = power
-            else:
-              updateData = False
-        else:
-          logging.warning(f"meter_data not available")
+        except Exception as e:
+          logging.warning('Error at %s', '_update', exc_info=e)
+          push = pb.push_note("Shell Plug Inverter Error", e)
       else:
         self._dbusservice['/Ac/Out/L1/P'] = 0
         self._dbusservice['/State'] = 0
