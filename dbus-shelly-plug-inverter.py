@@ -31,8 +31,11 @@ class DbusShelly1pmService:
     customname = config['DEFAULT']['CustomName']
     pbApiKey = config['DEFAULT']['PushBulletKey']
 
+    global pb
+    global appStarted
+
+    appStarted = False
     pb = Pushbullet(pbApiKey)
-    push = pb.push_note("Shelly Plug Inverter Started", "")
 
     self._dbusservice = VeDbusService("{}.http_{:02d}".format(servicename, deviceinstance))
     self._paths = paths
@@ -211,6 +214,10 @@ class DbusShelly1pmService:
     try:
       config = self._getConfig()
       updateData = True
+
+      if not appStarted:
+        push = pb.push_note("Shelly Plug Inverter Started", f"Started at {datetime.now()}")
+        appStarted = True
 
       isAlive = self._isShellyAlive()
       if isAlive:
