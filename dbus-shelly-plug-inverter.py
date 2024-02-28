@@ -216,7 +216,9 @@ class DbusShelly1pmService:
       updateData = True
 
       if not self.appStarted:
-        push = self.pb.push_note("Shelly Plug Inverter Started", f"Started at {datetime.now()}")
+        now = datetime.now()
+        now_str = now.strftime("%Y-%m-%d %H:%M:%S")
+        push = self.pb.push_note("Shelly Plug Inverter Started", f"Started at {now_str}")
         self.appStarted = True
 
       isAlive = self._isShellyAlive()
