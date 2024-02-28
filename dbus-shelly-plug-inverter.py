@@ -18,6 +18,7 @@ import time
 import requests # for http GET
 import configparser # for config/ini file
 from pushbullet import Pushbullet
+from datetime import datetime
 
 # our own packages from victron
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), '/opt/victronenergy/dbus-systemcalc-py/ext/velib_python'))
@@ -268,7 +269,7 @@ class DbusShelly1pmService:
 
         except Exception as e:
           logging.warning('Error at %s', '_update', exc_info=e)
-          push = self.pb.push_note("Shell Plug Inverter Error", e)
+          push = self.pb.push_note("Shell Plug Inverter Warning", e)
       else:
         self._dbusservice['/Ac/Out/L1/P'] = 0
         self._dbusservice['/State'] = 0
