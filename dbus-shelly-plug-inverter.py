@@ -17,7 +17,7 @@ import sys
 import time
 import requests # for http GET
 import configparser # for config/ini file
-from pushbullet import Pushbullet
+# from pushbullet import Pushbullet
 from datetime import datetime
 
 # our own packages from victron
@@ -36,7 +36,7 @@ class DbusShelly1pmService:
     pbApiKey = config['DEFAULT']['PushBulletKey']
 
     self.appStarted = False
-    self.pb = Pushbullet(pbApiKey)
+    # self.pb = Pushbullet(pbApiKey)
 
     self._dbusservice = VeDbusService("{}.http_{:02d}".format(servicename, deviceinstance))
     self._paths = paths
@@ -219,7 +219,7 @@ class DbusShelly1pmService:
       if not self.appStarted:
         now = datetime.now()
         now_str = now.strftime("%Y-%m-%d %H:%M:%S")
-        push = self.pb.push_note("Shelly Plug Inverter Started", f"Started at {now_str}")
+        # push = self.pb.push_note("Shelly Plug Inverter Started", f"Started at {now_str}")
         self.appStarted = True
 
       isAlive = self._isShellyAlive()
@@ -265,11 +265,11 @@ class DbusShelly1pmService:
                 updateData = False
           else:
             logging.warning(f"meter_data not available")
-            push = self.pb.push_note("meter_data not available")
+            # push = self.pb.push_note("meter_data not available")
 
         except Exception as e:
           logging.warning('Error at %s', '_update', exc_info=e)
-          push = self.pb.push_note("Shell Plug Inverter Warning", e)
+          # push = self.pb.push_note("Shell Plug Inverter Warning", e)
       else:
         self._dbusservice['/Ac/Out/L1/P'] = 0
         self._dbusservice['/State'] = 0
@@ -285,7 +285,7 @@ class DbusShelly1pmService:
     except Exception as e:
       logging.critical('Error at %s', '_update', exc_info=e)
       meter_data = None
-      push = self.pb.push_note("Shell Plug Inverter Error", e)
+      # push = self.pb.push_note("Shell Plug Inverter Error", e)
     # return true, otherwise add_timeout will be removed from GObject - see docs http://library.isr.ist.utl.pt/docs/pygtk2reference/gobject-functions.html#function-gobject--timeout-add
       
     return True
