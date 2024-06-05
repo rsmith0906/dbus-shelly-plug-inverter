@@ -142,30 +142,34 @@ class DbusShelly1pmService:
       return False
 
   def _getShellyDeviceInfo(self):
-    isAlive = self._isShellyAlive()
-    if isAlive:
-      URL = self._getShellyStatusUrl()
+     try:
+      isAlive = self._isShellyAlive()
+      if isAlive:
+        URL = self._getShellyStatusUrl()
 
-      data = {
-          'id': 0,
-          'method': 'Shelly.GetDeviceInfo'
-      }
+        data = {
+            'id': 0,
+            'method': 'Shelly.GetDeviceInfo'
+        }
 
-      json_data = json.dumps(data)
-      device_info = requests.post(url = URL, data=json_data, headers={'Content-Type': 'application/json'})
+        json_data = json.dumps(data)
+        device_info = requests.post(url = URL, data=json_data, headers={'Content-Type': 'application/json'})
 
-      # check for response
-      if not device_info:
-          raise ConnectionError("No response from Shelly Plug - %s" % (URL))
+        # check for response
+        if not device_info:
+            raise ConnectionError("No response from Shelly Plug - %s" % (URL))
 
-      dev_info = device_info.json()
+        dev_info = device_info.json()
 
-      # check for Json
-      if not dev_info:
-          raise ValueError("Converting response to JSON failed")
+        # check for Json
+        if not dev_info:
+            raise ValueError("Converting response to JSON failed")
 
-      return dev_info
-    else:
+        return dev_info
+      else:
+        return None
+     except Exception as e:
+      logging.warning('Error at %s', 'GetShellyDeviceInfo', exc_info=e)
       return None
 
   def _getShellyData(self):
@@ -193,6 +197,7 @@ class DbusShelly1pmService:
       return meter_data
     except Exception as e:
       logging.warning('Error at %s', 'getShellyData', exc_info=e)
+      return None
 
   def test_device(self, ip):
     try:
