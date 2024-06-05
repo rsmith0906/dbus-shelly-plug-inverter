@@ -280,9 +280,11 @@ class DbusShelly1pmService:
           logging.warning('Error at %s', '_update', exc_info=e)
           # push = self.pb.push_note("Shell Plug Inverter Warning", e)
       else:
-        self._dbusservice['/Ac/Out/L1/P'] = 0
-        self._dbusservice['/State'] = 0
-        # self._dbusservice['/Mode'] = 4
+        isAlive = self._isShellyAlive()
+        if not isAlive:
+          self._dbusservice['/Ac/Out/L1/P'] = 0
+          self._dbusservice['/State'] = 0
+          # self._dbusservice['/Mode'] = 4
 
       if updateData:
         self._signalChanges()
