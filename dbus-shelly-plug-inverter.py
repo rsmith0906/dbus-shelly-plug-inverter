@@ -250,13 +250,13 @@ class DbusShelly1pmService:
                     if power > 0:
                       if power > 5:
                         self._dbusservice['/State'] = 9
-                        self._dbusservice['/Mode'] = 2
+                        # self._dbusservice['/Mode'] = 2
                       else:
                         self._dbusservice['/State'] = 1
-                        self._dbusservice['/Mode'] = 5
+                        # self._dbusservice['/Mode'] = 5
                     else:
                       self._dbusservice['/State'] = 0
-                      self._dbusservice['/Mode'] = 5
+                      # self._dbusservice['/Mode'] = 5
 
               if not self._cachePower == power:
                 self.save_data("Inverter", f"{{ \"Power\": \"{power}\" }}")
@@ -273,7 +273,7 @@ class DbusShelly1pmService:
       else:
         self._dbusservice['/Ac/Out/L1/P'] = 0
         self._dbusservice['/State'] = 0
-        self._dbusservice['/Mode'] = 4
+        # self._dbusservice['/Mode'] = 4
 
       if updateData:
         self._signalChanges()
