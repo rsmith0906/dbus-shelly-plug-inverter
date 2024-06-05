@@ -1,8 +1,13 @@
 {
     "cSpell.words": [
         "apower",
+        "Dbus",
+        "gobject",
         "handlechangedvalue",
         "lastupdate",
-        "ONPREMISE"
+        "ONPREMISE",
+        "pvac",
+        "textformat",
+        "victronenergy"
     ]
 }
