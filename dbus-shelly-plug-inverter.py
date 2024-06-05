@@ -102,16 +102,12 @@ class DbusShelly1pmService:
     config.read("%s/config.ini" % (os.path.dirname(os.path.realpath(__file__))))
     return config;
 
-
   def _getSignOfLifeInterval(self):
     config = self._getConfig()
     value = config['DEFAULT']['SignOfLifeLog']
-
     if not value:
         value = 0
-
     return int(value)
-
 
   def _getShellyStatusUrl(self):
     config = self._getConfig()
@@ -126,22 +122,9 @@ class DbusShelly1pmService:
 
     return URL
 
-  def _isShellyAlive(self):
-     try:
-      config = self._getConfig()
-      IP = config['ONPREMISE']['Host']
-      isAlive = self.test_device(IP)
-      return isAlive
-     except Exception as e:
-      logging.warning('Error at %s', 'getShellyData', exc_info=e)
-      return False
-
   def _getShellyDeviceInfo(self):
      try:
-      isAlive = self._isShellyAlive()
-      if isAlive:
         URL = self._getShellyStatusUrl()
-
         data = {
             'id': 0,
             'method': 'Shelly.GetDeviceInfo'
@@ -161,8 +144,6 @@ class DbusShelly1pmService:
             raise ValueError("Converting response to JSON failed")
 
         return dev_info
-      else:
-        return None
      except Exception as e:
       logging.warning('Error at %s', 'GetShellyDeviceInfo', exc_info=e)
       return None
@@ -194,18 +175,6 @@ class DbusShelly1pmService:
       logging.warning('Error at %s', 'getShellyData', exc_info=e)
       return None
 
-  def test_device(self, ip):
-    try:
-        # Create a socket object
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            # Set a timeout for the connection
-            s.settimeout(1)
-            # Try to connect to the specified IP and port
-            s.connect((ip, 80))
-            return True
-    except socket.error as e:
-        return False
-
   def _signOfLife(self):
     logging.info("Start: sign of life - Last _update() call: %s" % (self._lastUpdate))
     return True
@@ -217,11 +186,8 @@ class DbusShelly1pmService:
 
       if not self.appStarted:
         now = datetime.now()
-        now_str = now.strftime("%Y-%m-%d %H:%M:%S")
         self.appStarted = True
 
-      isAlive = self._isShellyAlive()
-      if isAlive:
         #get data from Shelly Plug
         try:
           meter_data = self._getShellyData()
@@ -270,12 +236,6 @@ class DbusShelly1pmService:
 
         except Exception as e:
           logging.warning('Error at %s', '_update', exc_info=e)
-      else:
-        isAlive = self._isShellyAlive()
-        if not isAlive:
-          self._dbusservice['/Ac/Out/L1/P'] = 0
-          self._dbusservice['/State'] = 0
-          # self._dbusservice['/Mode'] = 4
 
       if updateData:
         self._signalChanges()
