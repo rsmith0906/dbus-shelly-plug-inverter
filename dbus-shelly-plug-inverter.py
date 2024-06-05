@@ -246,10 +246,14 @@ class DbusShelly1pmService:
                   if switch:
                     power = switch['apower']
                     voltage = switch['voltage']
-                    current = switch['current']
+
+                    try:
+                      current = switch['current']
+                      self._dbusservice[pre + '/I'] = current
+                    except Exception as e:
+                      logging.warning(f"current not available")
 
                     self._dbusservice[pre + '/V'] = voltage
-                    self._dbusservice[pre + '/I'] = current
                     self._dbusservice[pre + '/P'] = power
 
                     if power > 0:
