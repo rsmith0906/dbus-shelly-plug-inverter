@@ -5,7 +5,6 @@
 import datetime
 import platform
 import logging
-import socket
 import sys
 import os
 import sys
@@ -16,7 +15,6 @@ else:
     from gi.repository import GLib as gobject
 import sys
 import time
-import requests # for http GET
 import configparser # for config/ini file
 import subprocess
 from datetime import datetime
@@ -118,6 +116,23 @@ class DbusShelly1pmService:
 
     return int(value)
 
+  def _isShellyAlive(self):
+     try:
+      result = subprocess.run(
+          ["python", "shelly-plug-alive.py"],
+          capture_output=True,
+          text=True,
+      )
+
+      if result.returncode == 0:
+          jsonStr = result.stdout
+          return json.loads(jsonStr)
+      else:
+          return False
+     except Exception as e:
+      logging.warning('Error at %s', 'getShellyData', exc_info=e)
+      return False
+
   def _getShellyDeviceInfo(self):
      try:
       result = subprocess.run(
@@ -151,18 +166,6 @@ class DbusShelly1pmService:
     except Exception as e:
       logging.warning('Error at %s', 'getShellyData', exc_info=e)
       return None
-
-  def test_device(self, ip):
-    try:
-        # Create a socket object
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            # Set a timeout for the connection
-            s.settimeout(1)
-            # Try to connect to the specified IP and port
-            s.connect((ip, 80))
-            return True
-    except socket.error as e:
-        return False
 
   def _signOfLife(self):
     logging.info("Start: sign of life - Last _update() call: %s" % (self._lastUpdate))
