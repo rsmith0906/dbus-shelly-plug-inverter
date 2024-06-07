@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python
 
 # import normal packages
@@ -24,6 +25,7 @@ from datetime import datetime
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), '/opt/victronenergy/dbus-systemcalc-py/ext/velib_python'))
 from vedbus import VeDbusService
 
+
 class DbusShelly1pmService:
   pb = None
   appStarted = False
@@ -32,8 +34,11 @@ class DbusShelly1pmService:
     config = self._getConfig()
     deviceinstance = int(config['DEFAULT']['Deviceinstance'])
     customname = config['DEFAULT']['CustomName']
+    pbApiKey = config['DEFAULT']['PushBulletKey']
 
     self.appStarted = False
+    # self.pb = Pushbullet(pbApiKey)
+
     self._dbusservice = VeDbusService("{}.http_{:02d}".format(servicename, deviceinstance))
     self._paths = paths
 
@@ -103,11 +108,14 @@ class DbusShelly1pmService:
     config.read("%s/config.ini" % (os.path.dirname(os.path.realpath(__file__))))
     return config;
 
+
   def _getSignOfLifeInterval(self):
     config = self._getConfig()
     value = config['DEFAULT']['SignOfLifeLog']
+
     if not value:
         value = 0
+
     return int(value)
 
   def _getShellyDeviceInfo(self):
@@ -144,19 +152,36 @@ class DbusShelly1pmService:
       logging.warning('Error at %s', 'getShellyData', exc_info=e)
       return None
 
+  def test_device(self, ip):
+    try:
+        # Create a socket object
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            # Set a timeout for the connection
+            s.settimeout(1)
+            # Try to connect to the specified IP and port
+            s.connect((ip, 80))
+            return True
+    except socket.error as e:
+        return False
+
   def _signOfLife(self):
     logging.info("Start: sign of life - Last _update() call: %s" % (self._lastUpdate))
     return True
 
   def _update(self):
+    #while True:
     try:
       config = self._getConfig()
       updateData = True
 
       if not self.appStarted:
         now = datetime.now()
+        now_str = now.strftime("%Y-%m-%d %H:%M:%S")
+        # push = self.pb.push_note("Shelly Plug Inverter Started", f"Started at {now_str}")
         self.appStarted = True
 
+      isAlive = self._isShellyAlive()
+      if isAlive:
         #get data from Shelly Plug
         try:
           meter_data = self._getShellyData()
@@ -202,9 +227,17 @@ class DbusShelly1pmService:
                 updateData = False
           else:
             logging.warning(f"meter_data not available")
+            # push = self.pb.push_note("meter_data not available")
 
         except Exception as e:
           logging.warning('Error at %s', '_update', exc_info=e)
+          # push = self.pb.push_note("Shell Plug Inverter Warning", e)
+      else:
+        isAlive = self._isShellyAlive()
+        if not isAlive:
+          self._dbusservice['/Ac/Out/L1/P'] = 0
+          self._dbusservice['/State'] = 0
+          # self._dbusservice['/Mode'] = 4
 
       if updateData:
         self._signalChanges()
@@ -216,7 +249,8 @@ class DbusShelly1pmService:
     except Exception as e:
       logging.critical('Error at %s', '_update', exc_info=e)
       meter_data = None
-      # return true, otherwise add_timeout will be removed from GObject - see docs http://library.isr.ist.utl.pt/docs/pygtk2reference/gobject-functions.html#function-gobject--timeout-add
+      # push = self.pb.push_note("Shell Plug Inverter Error", e)
+    # return true, otherwise add_timeout will be removed from GObject - see docs http://library.isr.ist.utl.pt/docs/pygtk2reference/gobject-functions.html#function-gobject--timeout-add
       
     return True
 
@@ -255,39 +289,38 @@ def main():
                                 logging.FileHandler("%s/current.log" % (os.path.dirname(os.path.realpath(__file__)))),
                                 logging.StreamHandler()
                             ])
-  while True:
-    try:
-        logging.info("Start");
 
-        from dbus.mainloop.glib import DBusGMainLoop
-        # Have a mainloop, so we can send/receive asynchronous calls to and from dbus
-        DBusGMainLoop(set_as_default=True)
+  try:
+      logging.info("Start");
 
-        #formatting
-        _kwh = lambda p, v: (str(round(v, 2)) + 'kWh')
-        _state = lambda p, v: (str(v))
-        _mode = lambda p, v: (str(v))
-        _a = lambda p, v: (str(round(v, 1)) + 'A')
-        _w = lambda p, v: (str(round(v, 1)) + 'W')
-        _v = lambda p, v: (str(round(v, 1)) + 'V')
+      from dbus.mainloop.glib import DBusGMainLoop
+      # Have a mainloop, so we can send/receive asynchronous calls to and from dbus
+      DBusGMainLoop(set_as_default=True)
 
-        #start our main-service
-        pvac_output = DbusShelly1pmService(
-          servicename='com.victronenergy.inverter',
-          paths={
-            '/Ac/Out/L1/V': {'initial': 0, 'textformat': _v},
-            '/Ac/Out/L1/I': {'initial': 0, 'textformat': _a},
-            '/Ac/Out/L1/P': {'initial': 0, 'textformat': _w},
-            '/Ac/Voltage': {'initial': 0, 'textformat': _v},
-            '/State': {'initial': 0, 'textformat': _state},
-            '/Mode': {'initial': 4, 'textformat': _mode},
-          })
+      #formatting
+      _kwh = lambda p, v: (str(round(v, 2)) + 'kWh')
+      _state = lambda p, v: (str(v))
+      _mode = lambda p, v: (str(v))
+      _a = lambda p, v: (str(round(v, 1)) + 'A')
+      _w = lambda p, v: (str(round(v, 1)) + 'W')
+      _v = lambda p, v: (str(round(v, 1)) + 'V')
 
-        logging.info('Connected to dbus, and switching over to gobject.MainLoop() (= event based)')
-        mainloop = gobject.MainLoop()
-        mainloop.run()
-    except Exception as e:
-      logging.critical('Error at %s', 'main', exc_info=e)
+      #start our main-service
+      pvac_output = DbusShelly1pmService(
+        servicename='com.victronenergy.inverter',
+        paths={
+          '/Ac/Out/L1/V': {'initial': 0, 'textformat': _v},
+          '/Ac/Out/L1/I': {'initial': 0, 'textformat': _a},
+          '/Ac/Out/L1/P': {'initial': 0, 'textformat': _w},
+          '/Ac/Voltage': {'initial': 0, 'textformat': _v},
+          '/State': {'initial': 0, 'textformat': _state},
+          '/Mode': {'initial': 4, 'textformat': _mode},
+        })
 
+      logging.info('Connected to dbus, and switching over to gobject.MainLoop() (= event based)')
+      mainloop = gobject.MainLoop()
+      mainloop.run()
+  except Exception as e:
+    logging.critical('Error at %s', 'main', exc_info=e)
 if __name__ == "__main__":
   main()
