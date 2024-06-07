@@ -17,6 +17,7 @@ import sys
 import time
 import requests # for http GET
 import configparser # for config/ini file
+import subprocess
 from datetime import datetime
 
 # our own packages from victron
@@ -109,68 +110,36 @@ class DbusShelly1pmService:
         value = 0
     return int(value)
 
-  def _getShellyStatusUrl(self):
-    config = self._getConfig()
-    accessType = config['DEFAULT']['AccessType']
-
-    if accessType == 'OnPremise': 
-        #URL = "http://%s:%s@%s/rpc" % (config['ONPREMISE']['Username'], config['ONPREMISE']['Password'], config['ONPREMISE']['Host'])
-        URL = "http://%s/rpc" % (config['ONPREMISE']['Host'])
-        URL = URL.replace(":@", "")
-    else:
-        raise ValueError("AccessType %s is not supported" % (config['DEFAULT']['AccessType']))
-
-    return URL
-
   def _getShellyDeviceInfo(self):
      try:
-        URL = self._getShellyStatusUrl()
-        data = {
-            'id': 0,
-            'method': 'Shelly.GetDeviceInfo'
-        }
+      result = subprocess.run(
+          ["python", "shelly-plug-deviceInfo.py"],
+          capture_output=True,
+          text=True,
+      )
 
-        json_data = json.dumps(data)
-        device_info = requests.post(url = URL, data=json_data, headers={'Content-Type': 'application/json'})
-
-        # check for response
-        if not device_info:
-            raise ConnectionError("No response from Shelly Plug - %s" % (URL))
-
-        dev_info = device_info.json()
-
-        # check for Json
-        if not dev_info:
-            raise ValueError("Converting response to JSON failed")
-
-        return dev_info
+      if result.returncode == 0:
+          jsonStr = result.stdout
+          return json.loads(jsonStr)
+      else:
+          return None
      except Exception as e:
       logging.warning('Error at %s', 'GetShellyDeviceInfo', exc_info=e)
       return None
 
   def _getShellyData(self):
     try:
-      URL = self._getShellyStatusUrl()
+      result = subprocess.run(
+          ["python", "shelly-plug-deviceInfo.py"],
+          capture_output=True,
+          text=True,
+      )
 
-      data = {
-          'id': 0,
-          'method': 'Shelly.GetStatus'
-      }
-
-      json_data = json.dumps(data)
-      meter_r = requests.post(url = URL, data=json_data, headers={'Content-Type': 'application/json'})
-
-      # check for response
-      if not meter_r:
-          raise ConnectionError("No response from Shelly Plug - %s" % (URL))
-
-      meter_data = meter_r.json()
-
-      # check for Json
-      if not meter_data:
-          raise ValueError("Converting response to JSON failed")
-
-      return meter_data
+      if result.returncode == 0:
+          jsonStr = result.stdout
+          return json.loads(jsonStr)
+      else:
+          return None
     except Exception as e:
       logging.warning('Error at %s', 'getShellyData', exc_info=e)
       return None

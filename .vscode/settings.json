@@ -5,6 +5,8 @@
         "gobject",
         "handlechangedvalue",
         "lastupdate",
+        "levelname",
+        "msecs",
         "ONPREMISE",
         "pvac",
         "textformat",
